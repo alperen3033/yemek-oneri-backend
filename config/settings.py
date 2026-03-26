@@ -122,3 +122,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOW_ALL_ORIGINS = True
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+AI_PROVIDER = "openai"
