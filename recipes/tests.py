@@ -1,7 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from recipes.providers.openai_provider import parse_ai_response
 from recipes.serializers import SuggestRequestSerializer
+
+User = get_user_model()
 
 
 class SuggestRequestSerializerTests(SimpleTestCase):
@@ -49,3 +55,67 @@ class OpenAIProviderTests(SimpleTestCase):
         result = parse_ai_response("not-json")
 
         self.assertEqual(result, [])
+
+
+class AuthApiTests(APITestCase):
+    def test_register_creates_user_with_hashed_password(self):
+        response = self.client.post(
+            reverse("auth-register"),
+            {
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username="testuser")
+        self.assertNotEqual(user.password, "strongpass123")
+        self.assertTrue(user.check_password("strongpass123"))
+
+    def test_login_returns_access_token(self):
+        user = User.objects.create_user(
+            username="loginuser",
+            email="login@example.com",
+            password="strongpass123",
+        )
+
+        response = self.client.post(
+            reverse("auth-login"),
+            {
+                "username": user.username,
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+    def test_me_requires_authentication(self):
+        response = self.client.get(reverse("auth-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_me_returns_authenticated_user(self):
+        user = User.objects.create_user(
+            username="meuser",
+            email="me@example.com",
+            password="strongpass123",
+        )
+        login_response = self.client.post(
+            reverse("auth-login"),
+            {
+                "username": user.username,
+                "password": "strongpass123",
+            },
+            format="json",
+        )
+        access_token = login_response.data["access"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        response = self.client.get(reverse("auth-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["username"], user.username)

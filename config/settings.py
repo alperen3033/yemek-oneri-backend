@@ -161,3 +161,9 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "openai").strip().lower()
 
 if AI_PROVIDER not in {"openai", "mock"}:
     raise ImproperlyConfigured("AI_PROVIDER must be either 'openai' or 'mock'.")
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
