@@ -4,7 +4,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from .models import FavoriteRecipe
+
 from .serializers import (
+    FavoriteRecipeSerializer,
     LoginSerializer,
     RegisterSerializer,
     SuggestRequestSerializer,
@@ -42,6 +45,24 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
+
+
+class FavoriteRecipeListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        favorites = FavoriteRecipe.objects.filter(user=request.user)
+        serializer = FavoriteRecipeSerializer(favorites, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = FavoriteRecipeSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SuggestRecipesView(APIView):
