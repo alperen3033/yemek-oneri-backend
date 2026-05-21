@@ -63,6 +63,24 @@ class FavoriteRecipeListCreateView(APIView):
 
         serializer.save(user=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class FavoriteRecipeDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, favorite_id):
+        try:
+            favorite = FavoriteRecipe.objects.get(
+                id=favorite_id,
+                user=request.user
+            )
+        except FavoriteRecipe.DoesNotExist:
+            return Response(
+                {"detail": "Favorite not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        favorite.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)   
 
 
 class SuggestRecipesView(APIView):
@@ -79,3 +97,19 @@ class SuggestRecipesView(APIView):
             "count": len(results),
             "recipes": results
         }, status=status.HTTP_200_OK)
+
+
+class FavoriteRecipeDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, favorite_id):
+        try:
+            favorite = FavoriteRecipe.objects.get(id=favorite_id, user=request.user)
+        except FavoriteRecipe.DoesNotExist:
+            return Response(
+                {"detail": "Favorite not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        favorite.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
